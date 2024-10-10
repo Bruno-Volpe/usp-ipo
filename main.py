@@ -75,10 +75,6 @@ prob.solve()
 # Exibir o status da solução
 print("Status:", pulp.LpStatus[prob.status])
 
-# Exibir os fluxos de água otimizados
-for v in prob.variables():
-    print(v.name, "=", v.varValue)
-
 # Coordenadas centrais de São Carlos para o mapa
 central_point = [-22.005740, -47.873665]
 
@@ -107,12 +103,20 @@ for (i, j) in distances.keys():
 # Adicionar as conexões (fluxos de água) com base nos fluxos calculados (linhas azuis)
 for (i, j), flow_value in flow_vars.items():
     if flow_value.varValue > 0:  # Se houver fluxo entre os pontos
+        distance = distances[(i, j)]
+        cost_multiplier = get_cost_multiplier(i, j)
+        unit_cost = distance * cost_multiplier
+        total_cost = unit_cost * flow_value.varValue  # Custo total para o fluxo específico
+
         folium.PolyLine(
             locations=[points[i], points[j]],  # Coordenadas dos pontos conectados
             color='blue',                      # Cor da linha
             weight=2 + flow_value.varValue / 10,  # Espessura proporcional ao fluxo
             opacity=0.7,
-            popup=f"Fluxo: {flow_value.varValue} mil litros"
+            popup=(f"Fluxo: {flow_value.varValue} mil litros<br>"
+                   f"Distância: {distance:.2f} km<br>"
+                   f"Custo Unitário: R$ {unit_cost:.2f}/mil litros<br>"
+                   f"Custo Total do Fluxo: R$ {total_cost:.2f}")
         ).add_to(map_sao_carlos)
 
 # Salvar o mapa como arquivo HTML
